@@ -1,92 +1,26 @@
 <?php
 declare(strict_types=1);
 
-$root = dirname(__DIR__);
-$file = $root . '/data/jamoa.json';
-$notice = '';
-$error = '';
-$default = ['intro' => '', 'hero_image' => '', 'team' => []];
-
-function readTeamData(string $file, array $default): array {
-    if (!is_file($file)) return $default;
-    $raw = file_get_contents($file);
-    $data = is_string($raw) ? json_decode($raw, true) : null;
-    if (!is_array($data)) return $default;
-    foreach ($default as $key => $value) {
-        if (!array_key_exists($key, $data)) $data[$key] = $value;
-        if (is_array($value) && !is_array($data[$key])) $data[$key] = $value;
-    }
-    return $data;
-}
-
-function teamRowsToJson(string $value): array {
-    $rows = [];
-    foreach (preg_split('/\R/', $value) ?: [] as $line) {
-        $line = trim($line);
-        if ($line === '') continue;
-        $decoded = json_decode($line, true);
-        if (!is_array($decoded)) throw new RuntimeException('Jamoa qatori JSON object bo‘lishi kerak.');
-        $rows[] = $decoded;
-    }
-    return $rows;
-}
-
-function teamToLines(mixed $value): string {
-    if (!is_array($value)) return '';
-    $lines = [];
-    foreach ($value as $member) {
-        if (!is_array($member)) continue;
-        $encoded = json_encode($member, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-        if ($encoded !== false) $lines[] = $encoded;
-    }
-    return implode("\n", $lines);
-}
-
-$data = readTeamData($file, $default);
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $intro = trim((string)($_POST['intro'] ?? ''));
-    $heroImage = trim((string)($_POST['hero_image'] ?? ''));
-    $teamRaw = trim((string)($_POST['team'] ?? ''));
-
-    try {
-        if ($heroImage !== '' && !preg_match('#^(?:https?://|/|\.\./|media/)#i', $heroImage)) {
-            throw new RuntimeException('Hero image path xavfsiz formatda emas.');
-        }
-        $team = $teamRaw === '' ? [] : teamRowsToJson($teamRaw);
-        $data = ['intro' => $intro, 'hero_image' => $heroImage, 'team' => $team];
-        $json = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-        if ($json === false || file_put_contents($file, $json . PHP_EOL, LOCK_EX) === false) {
-            throw new RuntimeException('JSON faylini saqlash amalga oshmadi.');
-        }
-        $notice = 'Jamoa kontenti saqlandi.';
-    } catch (RuntimeException $e) {
-        $error = $e->getMessage();
-    }
+$root=dirname(__DIR__);$file=$root.'/data/jamoa.json';$notice='';$error='';
+$default=['intro'=>'','hero_image'=>'','team'=>[]];
+function e(mixed $v):string{return htmlspecialchars((string)$v,ENT_QUOTES,'UTF-8');}
+function readTeam(string $file,array $default):array{$raw=is_file($file)?file_get_contents($file):false;$data=is_string($raw)?json_decode($raw,true):null;if(!is_array($data))$data=$default;foreach($default as $k=>$v){if(!array_key_exists($k,$data))$data[$k]=$v;if(is_array($v)&&!is_array($data[$k]))$data[$k]=$v;}return $data;}
+function rowsToJson(string $raw):array{$out=[];foreach(preg_split('/\R/',$raw)?:[] as $line){$line=trim($line);if($line==='')continue;$item=json_decode($line,true);if(!is_array($item))throw new RuntimeException('Team: har bir qator valid JSON object bo‘lishi kerak.');$out[]=$item;}return $out;}
+function jsonLines(mixed $value):string{$out=[];if(!is_array($value))return '';foreach($value as $item){if(!is_array($item))continue;$json=json_encode($item,JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES);if($json!==false)$out[]=$json;}return implode("\n",$out);}
+$data=readTeam($file,$default);
+if($_SERVER['REQUEST_METHOD']==='POST'){
+ $intro=trim((string)($_POST['intro']??''));$hero=trim((string)($_POST['hero_image']??''));$teamRaw=trim((string)($_POST['team']??''));
+ try{if($hero!==''&&!preg_match('#^(?:https?://|/|\.\./|media/)#i',$hero))throw new RuntimeException('Hero image path xavfsiz formatda emas.');$team=$teamRaw===''?[]:rowsToJson($teamRaw);$payload=['intro'=>$intro,'hero_image'=>$hero,'team'=>$team];$json=json_encode($payload,JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES);if($json===false||file_put_contents($file,$json.PHP_EOL,LOCK_EX)===false)throw new RuntimeException('JSON faylini saqlash amalga oshmadi.');$data=$payload;$notice='Jamoa kontenti saqlandi.';}catch(RuntimeException $ex){$error=$ex->getMessage();}
 }
 ?>
-<!doctype html>
-<html lang="uz">
-<head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow">
-<title>Jamoa — CHIMYON SCHOOL Admin</title>
-<style>
-:root{--bg:#f5f5f3;--surface:#fff;--text:#111827;--muted:#68707d;--navy:#14213d;--gold:#c6a15b;--line:rgba(17,24,39,.09);--shadow:0 25px 80px rgba(20,33,61,.08)}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}.shell{width:min(1180px,calc(100% - 40px));margin:auto}.top{height:82px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}.brand{font-size:12px;font-weight:800;letter-spacing:.15em}.back{color:var(--text);text-decoration:none;font-size:13px;font-weight:700}.back:hover{color:var(--gold)}main{padding:70px 0 100px}.eyebrow{margin:0 0 16px;color:var(--gold);font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase}.intro{display:flex;justify-content:space-between;gap:50px;align-items:end;margin-bottom:55px}.intro h1{margin:0;font-size:clamp(48px,8vw,92px);line-height:.9;letter-spacing:-.065em}.intro p{max-width:390px;margin:0;color:var(--muted);line-height:1.7;font-size:14px}.notice,.error{padding:14px 18px;margin-bottom:22px;border:1px solid var(--line);background:#fff;font-size:13px}.error{border-color:rgba(160,60,50,.18);color:#8b3f36}.form{background:var(--surface);box-shadow:var(--shadow);padding:42px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:34px 44px}.wide{grid-column:1/-1}.field label{display:block;margin-bottom:10px;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}.field small{display:block;color:var(--muted);margin-top:7px;font-size:11px;line-height:1.5}.field input,.field textarea{width:100%;border:0;border-bottom:1px solid rgba(17,24,39,.16);background:transparent;border-radius:0;padding:13px 0;font:inherit;font-size:15px;color:var(--text);outline:none}.field textarea{min-height:150px;resize:vertical;border:1px solid var(--line);padding:14px}.field input:focus,.field textarea:focus{border-color:var(--navy)}.actions{display:flex;align-items:center;justify-content:space-between;margin-top:38px;padding-top:25px;border-top:1px solid var(--line);gap:20px}.hint{color:var(--muted);font-size:11px;line-height:1.55;max-width:700px}.save{border:0;background:var(--navy);color:#fff;padding:15px 24px;font:inherit;font-size:12px;font-weight:800;cursor:pointer;letter-spacing:.04em}.save:hover{background:#1b2d4e}.footer{margin-top:25px;color:var(--muted);font-size:11px}code{font-size:11px;color:#4f5968}@media(max-width:760px){.shell{width:min(100% - 26px,600px)}main{padding:48px 0 70px}.intro{display:block}.intro p{margin-top:25px}.form{padding:25px}.grid{grid-template-columns:1fr}.wide{grid-column:auto}.actions{align-items:flex-start;flex-direction:column}.save{width:100%}}@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
-</style>
-</head>
-<body><div class="shell">
-<header class="top"><div class="brand">CHIMYON / ADMIN</div><a class="back" href="index.php">← Control center</a></header>
-<main>
-<section class="intro"><div><p class="eyebrow">04 / PEOPLE</p><h1>Jamoa.</h1></div><p>O‘qituvchilar va jamoa profil ma’lumotlarini mavjud JSON schema’ni buzmasdan boshqaring.</p></section>
-<?php if ($notice): ?><div class="notice" role="status"><?= htmlspecialchars($notice, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
-<?php if ($error): ?><div class="error" role="alert"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
-<form class="form" method="post" autocomplete="off">
-<div class="grid">
-<div class="field wide"><label for="intro">Intro</label><textarea id="intro" name="intro" rows="5"><?= htmlspecialchars((string)$data['intro'], ENT_QUOTES, 'UTF-8') ?></textarea></div>
-<div class="field wide"><label for="hero_image">Hero image path</label><input id="hero_image" name="hero_image" value="<?= htmlspecialchars((string)$data['hero_image'], ENT_QUOTES, 'UTF-8') ?>" placeholder="media/images/..."><small>Faqat mavjud yoki keyinchalik media tizimiga ulanadigan xavfsiz path.</small></div>
-<div class="field wide"><label for="team">Team records</label><textarea id="team" name="team" rows="14" spellcheck="false" placeholder='Har bir qator bitta JSON object. Masalan: {"name":"...","role":"...","image":"..."}'><?= htmlspecialchars(teamToLines($data['team']), ENT_QUOTES, 'UTF-8') ?></textarea><small>Har bir qator alohida JSON object bo‘lishi kerak. Mavjud obyekt fieldlari o‘zgartirilmay saqlanadi. Uydirma teacher ma’lumotlarini kiritmang.</small></div>
-</div>
-<div class="actions"><div class="hint">JSON UTF-8 · pretty-print · file locking. Team editor mavjud schema’ni universal JSON object sifatida saqlaydi.</div><button class="save" type="submit">SAVE CHANGES →</button></div>
-</form>
-<p class="footer">data/jamoa.json · PHP 8.x · zero dependencies · current records: <?= count(is_array($data['team']) ? $data['team'] : []) ?></p>
+<!doctype html><html lang="uz"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Jamoa — CHIMYON SCHOOL Admin</title><style>
+:root{--bg:#f4f4f1;--paper:#fff;--ink:#111722;--muted:#6d7480;--navy:#14213d;--gold:#b99758;--line:rgba(17,23,34,.1);--shadow:0 30px 90px rgba(20,33,61,.08)}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}.shell{width:min(1220px,calc(100% - 42px));margin:auto}.top{height:82px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}.brand{font-size:12px;font-weight:850;letter-spacing:.16em}.back{color:var(--ink);text-decoration:none;font-size:12px;font-weight:750}.back:hover{color:var(--gold)}main{padding:72px 0 100px}.heading{display:grid;grid-template-columns:1fr 360px;gap:60px;align-items:end;margin-bottom:58px}.eyebrow{margin:0 0 16px;color:var(--gold);font-size:10px;font-weight:850;letter-spacing:.2em;text-transform:uppercase}.heading h1{margin:0;font-size:clamp(58px,9vw,110px);line-height:.84;letter-spacing:-.08em}.heading p{margin:0;color:var(--muted);font-size:13px;line-height:1.8}.alert{padding:14px 18px;background:#fff;border:1px solid var(--line);margin-bottom:20px;font-size:13px}.alert.error{color:#8b3f36;border-color:rgba(139,63,54,.2)}.editor{background:var(--paper);box-shadow:var(--shadow);padding:44px}.block{padding-bottom:38px;margin-bottom:38px;border-bottom:1px solid var(--line)}.block:last-child{padding-bottom:0;margin-bottom:0;border-bottom:0}.block-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:25px}.block-head h2{margin:0;font-size:15px;letter-spacing:-.02em}.index{font-size:9px;font-weight:850;color:var(--gold);letter-spacing:.16em}.field label{display:block;margin-bottom:9px;font-size:10px;font-weight:850;letter-spacing:.14em;text-transform:uppercase}.field input,.field textarea{width:100%;font:inherit;font-size:15px;color:var(--ink);background:transparent;outline:0}.field input{padding:13px 0;border:0;border-bottom:1px solid rgba(17,23,34,.16)}.field textarea{min-height:155px;padding:15px;border:1px solid var(--line);resize:vertical;line-height:1.65}.field input:focus,.field textarea:focus{border-color:var(--navy)}.field small{display:block;margin-top:8px;color:var(--muted);font-size:10px;line-height:1.6}.team-toolbar{display:flex;justify-content:space-between;gap:20px;margin-bottom:12px;color:var(--muted);font-size:10px;line-height:1.6}.team-count{color:var(--navy);font-weight:800}.actions{display:flex;justify-content:space-between;align-items:center;gap:25px;margin-top:38px;padding-top:25px;border-top:1px solid var(--line)}.hint{max-width:690px;color:var(--muted);font-size:10px;line-height:1.6}.save{border:0;background:var(--navy);color:#fff;padding:16px 25px;cursor:pointer;font:inherit;font-size:11px;font-weight:850;letter-spacing:.07em}.save:hover{background:#1d3154}.footer{margin-top:23px;color:var(--muted);font-size:10px}@media(max-width:760px){.shell{width:min(100% - 26px,620px)}main{padding:48px 0 70px}.heading{display:block}.heading p{margin-top:25px}.editor{padding:25px}.actions{align-items:stretch;flex-direction:column}.save{width:100%}}@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+</style></head><body><div class="shell"><header class="top"><div class="brand">CHIMYON / ADMIN</div><a class="back" href="index.php">← Control center</a></header><main>
+<section class="heading"><div><p class="eyebrow">04 / PEOPLE & CULTURE</p><h1>Jamoa.</h1></div><p>O‘qituvchilar va maktab jamoasining tasdiqlangan profil ma’lumotlarini tahrirlang. Mavjud schema o‘zgarmaydi va bo‘sh jamoa ham valid holat hisoblanadi.</p></section>
+<?php if($notice):?><div class="alert" role="status"><?=e($notice)?></div><?php endif;?><?php if($error):?><div class="alert error" role="alert"><?=e($error)?></div><?php endif;?>
+<form class="editor" method="post" autocomplete="off">
+<section class="block"><div class="block-head"><h2>Team introduction</h2><span class="index">01 / INTRO</span></div><div class="field"><label for="intro">Intro</label><textarea id="intro" name="intro" rows="5"><?=e($data['intro'])?></textarea><small>Public sahifadagi jamoa kirish matni.</small></div></section>
+<section class="block"><div class="block-head"><h2>Visual direction</h2><span class="index">02 / IMAGE</span></div><div class="field"><label for="hero_image">Hero image path</label><input id="hero_image" name="hero_image" value="<?=e($data['hero_image'])?>" placeholder="media/images/teachers-banner.png"><small>Faqat mavjud media path yoki HTTPS URL. Faylning o‘zi bu editor orqali yuklanmaydi.</small></div></section>
+<section class="block"><div class="block-head"><h2>People records</h2><span class="index">03 / TEAM</span></div><div class="team-toolbar"><span>Har bir qator — bitta JSON object.</span><span class="team-count">Current: <?=count(is_array($data['team'])?$data['team']:[])?> records</span></div><div class="field"><label for="team">Team JSONL</label><textarea id="team" name="team" rows="17" spellcheck="false" placeholder='{"name":"...","role":"...","image":"..."}'><?=e(jsonLines($data['team']))?></textarea><small>Masalan: {"name":"...","role":"...","image":"..."}. Mavjud fieldlarni saqlang. Haqiqiy teacher ma’lumotlari bo‘lmasa, qator qo‘shmang.</small></div></section>
+<div class="actions"><div class="hint">UTF-8 · pretty JSON · LOCK_EX · valid JSON object validation · PHP 8.x · zero dependencies. <strong>data/jamoa.json</strong> schema: intro / hero_image / team.</div><button class="save" type="submit">SAVE CHANGES →</button></div></form><p class="footer">Team source: data/jamoa.json · <?=count(is_array($data['team'])?$data['team']:[])?> verified records currently stored.</p>
 </main></div></body></html>
