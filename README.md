@@ -287,59 +287,51 @@ Never leave the README claiming an older state after code has moved forward.
 
 # 13. CURRENT DEVELOPMENT STATUS
 
-**Phase:** 1 — Homepage Design + Implementation
+**Phase:** 2 — School Page (`/pages/maktab.php`)
 
 **Completed:**
-- Full README/master instruction audited before implementation.
-- Repository tree, existing homepage implementation, JSON data and teacher banner asset audited.
-- `assets/teachers-banner.png` retained as the primary hero/team visual.
-- Homepage uses `/index.php` with PHP 8.x, semantic HTML5, CSS3 and vanilla JavaScript.
-- Homepage content remains data-driven through `data/home.json` with escaped output and safe JSON loading.
-- Implemented Header/Navigation, Hero, Brand Statement, Why Chimyon preview, Teachers preview, Results preview, Admission CTA and Footer.
-- Refined the homepage during visual QA: removed the decorative radial hero background, strengthened the open editorial composition, kept the teacher image dominant and added an intentional mobile navigation.
-- Hero scroll now uses progressive scale, translate, opacity and subtle blur while respecting `prefers-reduced-motion`.
-- Added IntersectionObserver reveal motion for content sections.
-- Added mobile/tablet-specific composition rather than simply shrinking desktop.
-- Kept unsupported teacher, results, admission and contact facts as explicit data-pending states; no facts were invented.
-- Homepage remains framework-free with zero dependencies.
+- Homepage implementation and first visual QA/refinement pass completed in the previous phase.
+- `/pages/maktab.php` created as the first full internal page.
+- Page follows the project stack: PHP 8.x, semantic HTML5, CSS3 and vanilla JavaScript with zero dependencies.
+- Page uses `data/maktab.json` as its editable content source.
+- School page composition is editorial rather than a repetitive card grid: identity hero, school introduction, philosophy and values.
+- Responsive desktop/mobile composition implemented intentionally.
+- Unsupported school facts are not invented; empty structured content is presented as an explicit pending state.
 
 **Files changed:**
-- `index.php` — homepage visual QA/refinement, cinematic scroll, responsive navigation and accessibility improvements.
-- `data/home.json` — existing homepage data source retained unchanged during this QA pass.
-- `README.md` — current development status updated.
+- `pages/maktab.php` — complete School / Identity page implementation.
+- `data/maktab.json` — initial predictable JSON contract with data-pending fields.
+- `README.md` — development status updated.
 
 **Current status:**
-- Homepage implementation + first visual QA/refinement pass complete.
-- No other public pages implemented.
+- `/pages/maktab.php` implementation is complete at code level.
+- Homepage remains completed and untouched during this phase.
+- No other internal public pages implemented.
 - No Admin implemented.
-- No separate teacher/result/admission/contact JSON sources exist yet.
-- `assets/teachers-banner.png` remains the current source for the hero/team image because the planned media library is not implemented yet.
 
 **Next exact execution step:**
-- Perform final browser-level visual QA of `/index.php` on the actual deployment at desktop and mobile widths. Verify image cropping, scroll transition, mobile menu, PHP render, console errors and accessibility. Fix only verified homepage issues. Do not begin other pages or Admin until homepage approval.
+- Browser-level QA of `/pages/maktab.php`: verify PHP render, JSON loading, typography, image behavior, responsive layout, navigation links and console errors. Fix only verified issues, then proceed to `/pages/jamoa.php`.
 
 **Known issues:**
-- Browser screenshot/console automation is unavailable in the current coding environment, so the latest pass was code-level QA only.
-- Repository data does not yet contain structured individual teachers, verified results, admission details or contact details; the homepage correctly avoids inventing them.
-- The existing teacher asset is under `assets/` rather than the planned future `media/` library.
+- `data/maktab.json` currently contains no verified school-specific facts, philosophy, values or image, so the page intentionally displays explicit content-pending states instead of invented information.
+- Browser screenshot/console automation is unavailable in the current coding environment.
 
-**After homepage approval:**
-1. `/pages/maktab.php`
-2. `/pages/jamoa.php`
-3. `/pages/talim.php`
-4. `/pages/natijalar.php`
-5. `/pages/yangiliklar.php`
-6. `/pages/galereya.php`
-7. `/pages/qabul.php`
-8. `/pages/aloqa.php`
-9. Admin
-10. Media management
-11. SEO/settings
-12. Final QA and optimization
+**After School page QA:**
+1. `/pages/jamoa.php`
+2. `/pages/talim.php`
+3. `/pages/natijalar.php`
+4. `/pages/yangiliklar.php`
+5. `/pages/galereya.php`
+6. `/pages/qabul.php`
+7. `/pages/aloqa.php`
+8. Admin
+9. Media management
+10. SEO/settings
+11. Final QA and optimization
 
 ---
 
-# 14. DEFINITION OF DONE
+## 14. DEFINITION OF DONE
 
 A task is NOT complete because code was written.
 
