@@ -1,0 +1,114 @@
+<?php
+declare(strict_types=1);
+
+$root = dirname(__DIR__);
+$mediaRoot = $root . '/media';
+$imagesDir = $mediaRoot . '/images';
+$videosDir = $mediaRoot . '/videos';
+$notice = '';
+$error = '';
+
+foreach ([$mediaRoot, $imagesDir, $videosDir] as $dir) {
+    if (!is_dir($dir)) @mkdir($dir, 0755, true);
+}
+
+function e(mixed $value): string { return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8'); }
+function humanSize(int $bytes): string {
+    if ($bytes < 1024) return $bytes . ' B';
+    if ($bytes < 1048576) return number_format($bytes / 1024, 1) . ' KB';
+    return number_format($bytes / 1048576, 1) . ' MB';
+}
+function mediaFiles(string $dir, string $type): array {
+    if (!is_dir($dir)) return [];
+    $allowed = $type === 'image'
+        ? ['jpg','jpeg','png','webp','gif','avif']
+        : ['mp4','webm','mov'];
+    $items = [];
+    foreach (scandir($dir) ?: [] as $name) {
+        if ($name === '.' || $name === '..') continue;
+        $path = $dir . DIRECTORY_SEPARATOR . $name;
+        if (!is_file($path)) continue;
+        $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+        if (!in_array($ext, $allowed, true)) continue;
+        $items[] = [
+            'name' => $name,
+            'path' => 'media/' . ($type === 'image' ? 'images/' : 'videos/') . $name,
+            'size' => (int)filesize($path),
+            'mtime' => (int)filemtime($path),
+            'type' => $type
+        ];
+    }
+    usort($items, fn(array $a, array $b) => $b['mtime'] <=> $a['mtime']);
+    return $items;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    try {
+        $action = (string)($_POST['action'] ?? '');
+        if ($action === 'upload') {
+            if (!isset($_FILES['media']) || !is_array($_FILES['media'])) throw new RuntimeException('Fayl tanlanmagan.');
+            $upload = $_FILES['media'];
+            if (($upload['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) throw new RuntimeException('Upload amalga oshmadi.');
+            $original = (string)($upload['name'] ?? '');
+            $tmp = (string)($upload['tmp_name'] ?? '');
+            $size = (int)($upload['size'] ?? 0);
+            if ($size <= 0 || $size > 25 * 1024 * 1024) throw new RuntimeException('Fayl hajmi 1–25 MB oralig‘ida bo‘lishi kerak.');
+            $ext = strtolower(pathinfo($original, PATHINFO_EXTENSION));
+            $images = ['jpg','jpeg','png','webp','gif','avif'];
+            $videos = ['mp4','webm','mov'];
+            $kind = in_array($ext, $images, true) ? 'image' : (in_array($ext, $videos, true) ? 'video' : '');
+            if ($kind === '') throw new RuntimeException('Faqat JPG, PNG, WEBP, GIF, AVIF, MP4, WEBM yoki MOV qabul qilinadi.');
+            if (!is_uploaded_file($tmp)) throw new RuntimeException('Upload manbasi tasdiqlanmadi.');
+            $mime = (new finfo(FILEINFO_MIME_TYPE))->file($tmp);
+            $allowedMime = $kind === 'image'
+                ? ['image/jpeg','image/png','image/webp','image/gif','image/avif']
+                : ['video/mp4','video/webm','video/quicktime'];
+            if (!in_array($mime, $allowedMime, true)) throw new RuntimeException('Fayl MIME turi extension bilan mos emas.');
+            $safe = preg_replace('/[^a-zA-Z0-9._-]+/', '-', pathinfo($original, PATHINFO_FILENAME));
+            $safe = trim((string)$safe, '-_.');
+            if ($safe === '') $safe = 'media';
+            $safe .= '-' . date('Ymd-His') . '-' . bin2hex(random_bytes(3)) . '.' . $ext;
+            $target = ($kind === 'image' ? $imagesDir : $videosDir) . DIRECTORY_SEPARATOR . $safe;
+            if (!move_uploaded_file($tmp, $target)) throw new RuntimeException('Faylni media katalogiga ko‘chirish amalga oshmadi.');
+            $notice = 'Media muvaffaqiyatli yuklandi: ' . $safe;
+        } elseif ($action === 'delete') {
+            $type = (string)($_POST['type'] ?? '');
+            $name = basename((string)($_POST['name'] ?? ''));
+            $dir = $type === 'image' ? $imagesDir : ($type === 'video' ? $videosDir : '');
+            $allowed = $type === 'image' ? ['jpg','jpeg','png','webp','gif','avif'] : ['mp4','webm','mov'];
+            $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+            if ($dir === '' || $name === '' || !in_array($ext, $allowed, true)) throw new RuntimeException('Media identifikatori noto‘g‘ri.');
+            $target = $dir . DIRECTORY_SEPARATOR . $name;
+            if (!is_file($target) || !unlink($target)) throw new RuntimeException('Media o‘chirilmadi.');
+            $notice = 'Media o‘chirildi: ' . $name;
+        } else {
+            throw new RuntimeException('Noma’lum amal.');
+        }
+    } catch (Throwable $exception) {
+        $error = $exception->getMessage();
+    }
+}
+
+$images = mediaFiles($imagesDir, 'image');
+$videos = mediaFiles($videosDir, 'video');
+?>
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Media — CHIMYON SCHOOL Admin</title>
+<style>
+:root{--bg:#f4f4f1;--paper:#fff;--ink:#101722;--muted:#6b7380;--navy:#14213d;--gold:#b99758;--line:rgba(16,23,34,.1);--shadow:0 30px 90px rgba(20,33,61,.08)}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}.shell{width:min(1200px,calc(100% - 40px));margin:auto}.top{height:82px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}.brand{font-size:12px;font-weight:850;letter-spacing:.15em}.back{color:var(--ink);text-decoration:none;font-size:12px;font-weight:750}.back:hover{color:var(--gold)}main{padding:72px 0 100px}.heading{display:flex;align-items:end;justify-content:space-between;gap:50px;margin-bottom:56px}.eyebrow{margin:0 0 15px;color:var(--gold);font-size:10px;font-weight:850;letter-spacing:.2em;text-transform:uppercase}.heading h1{margin:0;font-size:clamp(56px,8vw,96px);line-height:.86;letter-spacing:-.075em}.heading p{max-width:390px;margin:0;color:var(--muted);font-size:13px;line-height:1.75}.notice,.error{padding:14px 18px;margin-bottom:22px;background:#fff;border:1px solid var(--line);font-size:13px}.error{color:#8b3f36;border-color:rgba(139,63,54,.18)}.upload{background:var(--paper);box-shadow:var(--shadow);padding:34px;margin-bottom:55px}.upload-row{display:flex;align-items:end;gap:22px}.field{flex:1}.field label{display:block;margin-bottom:9px;font-size:10px;font-weight:850;letter-spacing:.13em;text-transform:uppercase}.field input[type=file]{width:100%;padding:14px;border:1px dashed rgba(16,23,34,.2);background:#fafaf8;font:inherit;font-size:13px}.field small{display:block;margin-top:8px;color:var(--muted);font-size:10px}.button{border:0;background:var(--navy);color:#fff;padding:16px 24px;cursor:pointer;font:inherit;font-size:11px;font-weight:850;letter-spacing:.06em}.button:hover{background:#1d3154}.section{margin-top:55px}.section-head{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--line);padding-bottom:15px;margin-bottom:22px}.section-head h2{margin:0;font-size:17px}.count{color:var(--muted);font-size:10px;letter-spacing:.12em;text-transform:uppercase}.gallery{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}.asset{background:var(--paper);overflow:hidden;border:1px solid var(--line)}.preview{aspect-ratio:4/3;background:#e9e9e5;display:block;width:100%;object-fit:cover}.asset-info{padding:15px}.name{font-size:11px;font-weight:750;word-break:break-word;line-height:1.45}.meta{margin-top:6px;color:var(--muted);font-size:9px}.delete{margin-top:13px;border:1px solid var(--line);background:transparent;padding:9px 11px;cursor:pointer;color:#8b3f36;font:inherit;font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.empty{padding:30px 0;color:var(--muted);font-size:12px;border-bottom:1px solid var(--line)}code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.9em}@media(max-width:900px){.gallery{grid-template-columns:repeat(3,1fr)}}@media(max-width:650px){.shell{width:min(100% - 26px,600px)}main{padding:48px 0 70px}.heading{display:block}.heading p{margin-top:24px}.upload{padding:24px}.upload-row{display:block}.button{width:100%;margin-top:15px}.gallery{grid-template-columns:repeat(2,1fr)}}@media(max-width:420px){.gallery{grid-template-columns:1fr}}@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+</style>
+</head>
+<body><div class="shell">
+<header class="top"><div class="brand">CHIMYON / ADMIN</div><a class="back" href="index.php">← Control center</a></header>
+<main>
+<section class="heading"><div><p class="eyebrow">09 / MEDIA LIBRARY</p><h1>Media.</h1></div><p>Saytning vizual manbalarini markaziy katalogdan boshqaring. Upload MIME orqali tekshiriladi va media katalogidan tashqariga yozilmaydi.</p></section>
+<?php if($notice):?><div class="notice" role="status"><?=e($notice)?></div><?php endif;?><?php if($error):?><div class="error" role="alert"><?=e($error)?></div><?php endif;?>
+<form class="upload" method="post" enctype="multipart/form-data"><input type="hidden" name="action" value="upload"><div class="upload-row"><div class="field"><label for="media">Upload media</label><input id="media" name="media" type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/avif,video/mp4,video/webm,video/quicktime" required><small>JPG · PNG · WEBP · GIF · AVIF · MP4 · WEBM · MOV · maximum 25 MB.</small></div><button class="button" type="submit">UPLOAD →</button></div></form>
+<section class="section"><div class="section-head"><h2>Images</h2><span class="count"><?=count($images)?> assets</span></div><?php if(!$images):?><div class="empty">Hozircha image media mavjud emas.</div><?php else:?><div class="gallery"><?php foreach($images as $item):?><article class="asset"><img class="preview" src="<?=e($item['path'])?>" alt="<?=e($item['name'])?>" loading="lazy"><div class="asset-info"><div class="name"><?=e($item['name'])?></div><div class="meta"><?=e(humanSize($item['size']))?></div><form method="post" onsubmit="return confirm('Ushbu media faylini o‘chirishni tasdiqlaysizmi?')"><input type="hidden" name="action" value="delete"><input type="hidden" name="type" value="image"><input type="hidden" name="name" value="<?=e($item['name'])?>"><button class="delete" type="submit">Delete</button></form></div></article><?php endforeach;?></div><?php endif;?></section>
+<section class="section"><div class="section-head"><h2>Videos</h2><span class="count"><?=count($videos)?> assets</span></div><?php if(!$videos):?><div class="empty">Hozircha video media mavjud emas.</div><?php else:?><div class="gallery"><?php foreach($videos as $item):?><article class="asset"><video class="preview" src="<?=e($item['path'])?>" controls preload="metadata"></video><div class="asset-info"><div class="name"><?=e($item['name'])?></div><div class="meta"><?=e(humanSize($item['size']))?></div><form method="post" onsubmit="return confirm('Ushbu media faylini o‘chirishni tasdiqlaysizmi?')"><input type="hidden" name="action" value="delete"><input type="hidden" name="type" value="video"><input type="hidden" name="name" value="<?=e($item['name'])?>"><button class="delete" type="submit">Delete</button></form></div></article><?php endforeach;?></div><?php endif;?></section>
+</main></div></body></html>
