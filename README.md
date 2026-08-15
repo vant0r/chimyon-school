@@ -291,40 +291,37 @@ Never leave the README claiming an older state after code has moved forward.
 
 **Completed:**
 - Full README/master instruction audited before implementation.
-- Repository tree audited: initially `README.md`, `index.html` and `assets/teachers-banner.png` were present; the planned PHP/data structure had not yet been created.
-- Existing `index.html` audited and its useful visual direction preserved where appropriate.
-- Existing `assets/teachers-banner.png` retained as the primary hero/team visual.
-- Homepage migrated to `/index.php` using PHP 8.x, semantic HTML5, CSS3 and vanilla JavaScript.
-- Homepage editable content moved into `data/home.json` with safe JSON loading and HTML escaping.
+- Repository tree, existing homepage implementation, JSON data and teacher banner asset audited.
+- `assets/teachers-banner.png` retained as the primary hero/team visual.
+- Homepage uses `/index.php` with PHP 8.x, semantic HTML5, CSS3 and vanilla JavaScript.
+- Homepage content remains data-driven through `data/home.json` with escaped output and safe JSON loading.
 - Implemented Header/Navigation, Hero, Brand Statement, Why Chimyon preview, Teachers preview, Results preview, Admission CTA and Footer.
-- Added cinematic hero scroll behavior: scale, translate, opacity and subtle blur.
-- Added responsive desktop/tablet/mobile composition.
-- Added `prefers-reduced-motion` support.
-- Removed unsupported/invented individual teacher and results claims from the homepage and replaced them with explicit data-pending states.
-- PHP syntax, JSON parsing and local PHP render smoke test passed.
+- Refined the homepage during visual QA: removed the decorative radial hero background, strengthened the open editorial composition, kept the teacher image dominant and added an intentional mobile navigation.
+- Hero scroll now uses progressive scale, translate, opacity and subtle blur while respecting `prefers-reduced-motion`.
+- Added IntersectionObserver reveal motion for content sections.
+- Added mobile/tablet-specific composition rather than simply shrinking desktop.
+- Kept unsupported teacher, results, admission and contact facts as explicit data-pending states; no facts were invented.
+- Homepage remains framework-free with zero dependencies.
 
 **Files changed:**
-- `index.php` — homepage implementation.
-- `data/home.json` — homepage content contract/data source.
-- `README.md` — progress/status updated.
-- `index.html` — removed because `/index.php` is now the single homepage responsibility.
-
-**Currently working on:**
-- Homepage implementation is complete for the current repository data set. Visual QA can now be performed against the real deployment/device set.
+- `index.php` — homepage visual QA/refinement, cinematic scroll, responsive navigation and accessibility improvements.
+- `data/home.json` — existing homepage data source retained unchanged during this QA pass.
+- `README.md` — current development status updated.
 
 **Current status:**
-- Homepage implementation complete.
+- Homepage implementation + first visual QA/refinement pass complete.
 - No other public pages implemented.
 - No Admin implemented.
-- No separate teacher/result JSON sources exist yet.
+- No separate teacher/result/admission/contact JSON sources exist yet.
+- `assets/teachers-banner.png` remains the current source for the hero/team image because the planned media library is not implemented yet.
 
 **Next exact execution step:**
-- Perform browser-level visual QA of `/index.php` on desktop and mobile using the real deployed asset, then fix only verified homepage issues. Do not start other pages or Admin until homepage approval.
+- Perform final browser-level visual QA of `/index.php` on the actual deployment at desktop and mobile widths. Verify image cropping, scroll transition, mobile menu, PHP render, console errors and accessibility. Fix only verified homepage issues. Do not begin other pages or Admin until homepage approval.
 
 **Known issues:**
-- The repository currently contains no structured teacher/result/admission/contact JSON data, so the homepage intentionally does not invent those facts.
-- The teacher image remains at `assets/teachers-banner.png` because the repository does not yet have the planned `media/` library.
-- Automated browser screenshot/console inspection was not available in this environment; PHP render smoke testing was completed successfully.
+- Browser screenshot/console automation is unavailable in the current coding environment, so the latest pass was code-level QA only.
+- Repository data does not yet contain structured individual teachers, verified results, admission details or contact details; the homepage correctly avoids inventing them.
+- The existing teacher asset is under `assets/` rather than the planned future `media/` library.
 
 **After homepage approval:**
 1. `/pages/maktab.php`
