@@ -5,83 +5,59 @@ $root = dirname(__DIR__);
 $file = $root . '/data/maktab.json';
 $notice = '';
 $error = '';
+$defaultSchool = ['title'=>'Maktab','intro'=>'','image'=>'','philosophy'=>[],'values'=>[]];
 
-function readMaktab(string $file): array
-{
-    if (!is_file($file)) return ['school' => ['title' => 'Maktab', 'intro' => '', 'image' => '', 'philosophy' => [], 'values' => []]];
+function readMaktab(string $file, array $default): array {
+    if (!is_file($file)) return ['school'=>$default];
     $raw = file_get_contents($file);
     $data = is_string($raw) ? json_decode($raw, true) : null;
-    return is_array($data) && isset($data['school']) && is_array($data['school']) ? $data : ['school' => ['title' => 'Maktab', 'intro' => '', 'image' => '', 'philosophy' => [], 'values' => []]];
+    if (!is_array($data) || !isset($data['school']) || !is_array($data['school'])) return ['school'=>$default];
+    foreach ($default as $key=>$value) {
+        if (!array_key_exists($key,$data['school'])) $data['school'][$key]=$value;
+        if (is_array($value) && !is_array($data['school'][$key])) $data['school'][$key]=$value;
+    }
+    return $data;
 }
+function linesToArray(string $value): array {
+    $items=[];
+    foreach (preg_split('/\R/',$value) ?: [] as $line) { $line=trim($line); if($line!=='') $items[]=$line; }
+    return $items;
+}
+function e(mixed $value): string { return htmlspecialchars((string)$value,ENT_QUOTES,'UTF-8'); }
 
-function cleanLine(string $value): string { return trim($value); }
+$data=readMaktab($file,$defaultSchool);
+$school=$data['school'];
 
-$data = readMaktab($file);
-$school = $data['school'];
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $title = cleanLine((string)($_POST['title'] ?? ''));
-    $intro = trim((string)($_POST['intro'] ?? ''));
-    $image = cleanLine((string)($_POST['image'] ?? ''));
-
-    $philosophy = [];
-    foreach (preg_split('/\R/', (string)($_POST['philosophy'] ?? '')) ?: [] as $line) {
-        $line = trim($line);
-        if ($line !== '') $philosophy[] = $line;
-    }
-
-    $values = [];
-    foreach (preg_split('/\R/', (string)($_POST['values'] ?? '')) ?: [] as $line) {
-        $line = trim($line);
-        if ($line !== '') $values[] = $line;
-    }
-
-    if ($title === '') {
-        $error = 'Sarlavha bo‘sh bo‘lishi mumkin emas.';
-    } elseif ($image !== '' && !preg_match('#^(?:https?://|/|\.\./|media/)#i', $image)) {
-        $error = 'Image path xavfsiz formatda emas.';
-    } else {
-        $payload = ['school' => ['title' => $title, 'intro' => $intro, 'image' => $image, 'philosophy' => $philosophy, 'values' => $values]];
-        $json = json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-        if ($json === false || file_put_contents($file, $json . PHP_EOL, LOCK_EX) === false) {
-            $error = 'JSON faylini saqlash amalga oshmadi.';
-        } else {
-            $school = $payload['school'];
-            $notice = 'Maktab kontenti saqlandi.';
-        }
-    }
+if($_SERVER['REQUEST_METHOD']==='POST'){
+    $title=trim((string)($_POST['title']??''));
+    $intro=trim((string)($_POST['intro']??''));
+    $image=trim((string)($_POST['image']??''));
+    $philosophy=linesToArray((string)($_POST['philosophy']??''));
+    $values=linesToArray((string)($_POST['values']??''));
+    try{
+        if($title==='') throw new RuntimeException('Sarlavha bo‘sh bo‘lishi mumkin emas.');
+        if($image!==''&&!preg_match('#^(?:https?://|/|\.\./|media/)#i',$image)) throw new RuntimeException('Image path xavfsiz formatda emas.');
+        $payload=['school'=>['title'=>$title,'intro'=>$intro,'image'=>$image,'philosophy'=>$philosophy,'values'=>$values]];
+        $json=json_encode($payload,JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES);
+        if($json===false||file_put_contents($file,$json.PHP_EOL,LOCK_EX)===false) throw new RuntimeException('JSON faylini saqlash amalga oshmadi.');
+        $school=$payload['school']; $notice='Maktab kontenti saqlandi.';
+    }catch(RuntimeException $ex){$error=$ex->getMessage();}
 }
 ?>
-<!doctype html>
-<html lang="uz">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="robots" content="noindex,nofollow">
+<!doctype html><html lang="uz"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow">
 <title>Maktab — CHIMYON SCHOOL Admin</title>
 <style>
-:root{--bg:#f5f5f3;--surface:#fff;--text:#111827;--muted:#68707d;--navy:#14213d;--gold:#c6a15b;--line:rgba(17,24,39,.09);--shadow:0 25px 80px rgba(20,33,61,.08)}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}.shell{width:min(1180px,calc(100% - 40px));margin:auto}.top{height:82px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}.brand{font-size:12px;font-weight:800;letter-spacing:.15em}.back{color:var(--text);text-decoration:none;font-size:13px;font-weight:700}.back:hover{color:var(--gold)}main{padding:70px 0 100px}.eyebrow{margin:0 0 16px;color:var(--gold);font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase}.intro{display:flex;justify-content:space-between;gap:50px;align-items:end;margin-bottom:55px}.intro h1{margin:0;font-size:clamp(48px,8vw,92px);line-height:.9;letter-spacing:-.065em}.intro p{max-width:360px;margin:0;color:var(--muted);line-height:1.7;font-size:14px}.notice,.error{padding:14px 18px;margin-bottom:22px;border:1px solid var(--line);background:#fff;font-size:13px}.error{border-color:rgba(160,60,50,.18);color:#8b3f36}.form{background:var(--surface);box-shadow:var(--shadow);padding:42px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:34px 44px}.wide{grid-column:1/-1}.field label{display:block;margin-bottom:10px;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}.field small{display:block;color:var(--muted);margin-top:7px;font-size:11px}.field input,.field textarea{width:100%;border:0;border-bottom:1px solid rgba(17,24,39,.16);background:transparent;border-radius:0;padding:13px 0;font:inherit;font-size:15px;color:var(--text);outline:none}.field textarea{min-height:130px;resize:vertical;border:1px solid var(--line);padding:14px}.field input:focus,.field textarea:focus{border-color:var(--navy)}.actions{display:flex;align-items:center;justify-content:space-between;margin-top:38px;padding-top:25px;border-top:1px solid var(--line);gap:20px}.hint{color:var(--muted);font-size:11px;line-height:1.5}.save{border:0;background:var(--navy);color:#fff;padding:15px 24px;font:inherit;font-size:12px;font-weight:800;cursor:pointer;letter-spacing:.04em}.save:hover{background:#1b2d4e}.footer{margin-top:25px;color:var(--muted);font-size:11px}@media(max-width:760px){.shell{width:min(100% - 26px,600px)}main{padding:48px 0 70px}.intro{display:block}.intro p{margin-top:25px}.form{padding:25px}.grid{grid-template-columns:1fr}.wide{grid-column:auto}.actions{align-items:flex-start;flex-direction:column}.save{width:100%}}@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
-</style>
-</head>
-<body>
-<div class="shell">
+:root{--bg:#f4f4f1;--paper:#fff;--ink:#101722;--muted:#6b7380;--navy:#14213d;--gold:#b99758;--line:rgba(16,23,34,.1);--shadow:0 28px 90px rgba(20,33,61,.08)}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}.shell{width:min(1180px,calc(100% - 40px));margin:auto}.top{height:82px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}.brand{font-size:12px;font-weight:850;letter-spacing:.15em}.back{color:var(--ink);text-decoration:none;font-size:12px;font-weight:750}.back:hover{color:var(--gold)}main{padding:72px 0 100px}.heading{display:flex;align-items:end;justify-content:space-between;gap:50px;margin-bottom:58px}.eyebrow{margin:0 0 15px;color:var(--gold);font-size:10px;font-weight:850;letter-spacing:.2em;text-transform:uppercase}.heading h1{margin:0;font-size:clamp(56px,8vw,96px);line-height:.86;letter-spacing:-.075em}.heading p{max-width:380px;margin:0;color:var(--muted);font-size:13px;line-height:1.75}.notice,.error{padding:14px 18px;margin-bottom:22px;background:#fff;border:1px solid var(--line);font-size:13px}.error{color:#8b3f36;border-color:rgba(139,63,54,.18)}.form{background:var(--paper);box-shadow:var(--shadow);padding:44px}.section{padding:0 0 38px;margin-bottom:38px;border-bottom:1px solid var(--line)}.section:last-of-type{margin-bottom:0;border-bottom:0;padding-bottom:0}.section-head{display:flex;justify-content:space-between;align-items:baseline;gap:20px;margin-bottom:26px}.section-head h2{margin:0;font-size:15px;letter-spacing:-.02em}.section-head span{color:var(--gold);font-size:9px;font-weight:850;letter-spacing:.15em;text-transform:uppercase}.grid{display:grid;grid-template-columns:1fr 1fr;gap:30px 44px}.wide{grid-column:1/-1}.field label{display:block;margin-bottom:9px;font-size:10px;font-weight:850;letter-spacing:.13em;text-transform:uppercase}.field input,.field textarea{width:100%;border:0;border-bottom:1px solid rgba(16,23,34,.16);background:transparent;color:var(--ink);outline:none;padding:13px 0;font:inherit;font-size:15px}.field textarea{min-height:145px;resize:vertical;border:1px solid var(--line);padding:14px;line-height:1.65}.field input:focus,.field textarea:focus{border-color:var(--navy)}.field small{display:block;margin-top:8px;color:var(--muted);font-size:10px;line-height:1.55}.actions{display:flex;align-items:center;justify-content:space-between;gap:24px;padding-top:28px;margin-top:38px;border-top:1px solid var(--line)}.hint{max-width:650px;color:var(--muted);font-size:10px;line-height:1.6}.save{border:0;background:var(--navy);color:#fff;padding:15px 24px;cursor:pointer;font:inherit;font-size:11px;font-weight:850;letter-spacing:.06em}.save:hover{background:#1d3154}.footer{margin-top:24px;color:var(--muted);font-size:10px}@media(max-width:720px){.shell{width:min(100% - 26px,600px)}main{padding:48px 0 70px}.heading{display:block}.heading p{margin-top:24px}.form{padding:26px}.grid{grid-template-columns:1fr}.wide{grid-column:auto}.actions{align-items:stretch;flex-direction:column}.save{width:100%}}@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+</style></head><body><div class="shell">
 <header class="top"><div class="brand">CHIMYON / ADMIN</div><a class="back" href="index.php">← Control center</a></header>
 <main>
-<section class="intro"><div><p class="eyebrow">02 / SCHOOL IDENTITY</p><h1>Maktab.</h1></div><p>Public School sahifasining editable kontenti shu yerda boshqariladi. Faqat tasdiqlangan ma’lumotlarni kiriting.</p></section>
-<?php if ($notice): ?><div class="notice" role="status"><?= htmlspecialchars($notice, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
-<?php if ($error): ?><div class="error" role="alert"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
+<section class="heading"><div><p class="eyebrow">02 / SCHOOL IDENTITY</p><h1>Maktab.</h1></div><p>CHIMYON SCHOOL identitetini bitta aniq kontent qatlamidan boshqaring. Mavjud JSON struktura saqlanadi; bu yerda faqat real ma’lumotlar kiritiladi.</p></section>
+<?php if($notice):?><div class="notice" role="status"><?=e($notice)?></div><?php endif;?><?php if($error):?><div class="error" role="alert"><?=e($error)?></div><?php endif;?>
 <form class="form" method="post" autocomplete="off">
-<div class="grid">
-<div class="field"><label for="title">Sarlavha</label><input id="title" name="title" value="<?= htmlspecialchars((string)$school['title'], ENT_QUOTES, 'UTF-8') ?>" required></div>
-<div class="field"><label for="image">Hero image path</label><input id="image" name="image" value="<?= htmlspecialchars((string)($school['image'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" placeholder="media/images/..."><small>Media fayli mavjud bo‘lgandagina path kiriting.</small></div>
-<div class="field wide"><label for="intro">Intro</label><textarea id="intro" name="intro" rows="5"><?= htmlspecialchars((string)($school['intro'] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea></div>
-<div class="field"><label for="philosophy">Falsafa</label><textarea id="philosophy" name="philosophy" placeholder="Har bir fikr — yangi qatorda."><?= htmlspecialchars(implode("\n", is_array($school['philosophy'] ?? null) ? $school['philosophy'] : []), ENT_QUOTES, 'UTF-8') ?></textarea><small>Har bir qator JSON array elementiga aylanadi.</small></div>
-<div class="field"><label for="values">Qadriyatlar</label><textarea id="values" name="values" placeholder="Har bir qadriyat — yangi qatorda."><?= htmlspecialchars(implode("\n", is_array($school['values'] ?? null) ? $school['values'] : []), ENT_QUOTES, 'UTF-8') ?></textarea><small>Uydirma fakt yoki statistika kiritmang.</small></div>
-</div>
-<div class="actions"><div class="hint">JSON UTF-8 formatda, pretty-print va file locking bilan saqlanadi.</div><button class="save" type="submit">SAVE CHANGES →</button></div>
-</form>
-<p class="footer">data/maktab.json · PHP 8.x · zero dependencies</p>
-</main>
-</div>
-</body>
-</html>
+<section class="section"><div class="section-head"><h2>Identity</h2><span>01 / Core</span></div><div class="grid"><div class="field"><label for="title">Sarlavha</label><input id="title" name="title" value="<?=e($school['title'])?>" required></div><div class="field"><label for="image">Image path</label><input id="image" name="image" value="<?=e($school['image']??'')?>" placeholder="media/images/..."><small>Faqat mavjud media path yoki ishonchli URL.</small></div><div class="field wide"><label for="intro">Intro</label><textarea id="intro" name="intro" rows="5"><?=e($school['intro']??'')?></textarea></div></div></section>
+<section class="section"><div class="section-head"><h2>Philosophy</h2><span>02 / Voice</span></div><div class="field"><label for="philosophy">Falsafa</label><textarea id="philosophy" name="philosophy" rows="8" placeholder="Har bir fikr — yangi qatorda."><?=e(implode("\n",is_array($school['philosophy']??null)?$school['philosophy']:[]))?></textarea><small>Har bir qator JSON array elementiga aylanadi.</small></div></section>
+<section class="section"><div class="section-head"><h2>Values</h2><span>03 / Principles</span></div><div class="field"><label for="values">Qadriyatlar</label><textarea id="values" name="values" rows="8" placeholder="Har bir qadriyat — yangi qatorda."><?=e(implode("\n",is_array($school['values']??null)?$school['values']:[]))?></textarea><small>Uydirma fakt, statistikalar yoki teacher ma’lumotlarini bu yerga qo‘shmang.</small></div></section>
+<div class="actions"><div class="hint">JSON UTF-8 · pretty-print · LOCK_EX · existing <strong>school</strong> schema preserved · PHP 8.x · zero dependencies.</div><button class="save" type="submit">SAVE CHANGES →</button></div>
+</form><p class="footer">data/maktab.json · <?=count($school['philosophy'])?> philosophy items · <?=count($school['values'])?> values</p>
+</main></div></body></html>
