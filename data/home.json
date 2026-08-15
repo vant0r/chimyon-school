@@ -1,0 +1,15 @@
+{
+  "brand": {"name": "CHIMYON", "description": "CHIMYON SCHOOL — premium education experience."},
+  "hero": {"eyebrow": "XUSUSIY MAKTAB · FARG‘ONA", "title": "CHIMYON", "accent": "SCHOOL", "description": "Bilimni shunchaki o‘rgatmaymiz. Natijaga aylantiramiz.", "image": "assets/teachers-banner.png", "image_alt": "CHIMYON SCHOOL o‘qituvchilari", "meta": "EDUCATION"},
+  "statement": {"label": "BRAND STATEMENT", "title": "Ta’limga", "accent": "boshqacha", "title_end": "qarash.", "description": "Har bir o‘quvchi — alohida xarakter, alohida maqsad va alohida imkoniyat. Biz ta’lim tajribasini shu nuqtadan quramiz."},
+  "strengths_intro": "Mavjud loyiha ma’lumotlari kengaytirilgach, bu preview JSON orqali boyitiladi.",
+  "strengths": [
+    {"title": "Kuchli fanlar", "description": "Asosiy fanlar bo‘yicha chuqur va tizimli tayyorgarlik."},
+    {"title": "Ustoz", "description": "O‘quvchi bilan ishlashga yo‘naltirilgan professional ta’lim muhiti."},
+    {"title": "Intizom", "description": "Rivojlanish uchun tartibli va e’tiborli muhit."}
+  ],
+  "team": {"title": "Natija ortida", "accent": "inson.", "description": "O‘qituvchilar jamoasi maktabning insoniy markazi. Hozircha repositoryda individual teacher JSON ma’lumotlari mavjud emas, shuning uchun ism va lavozimlar uydirilmaydi.", "image_alt": "CHIMYON SCHOOL o‘qituvchilari", "note_label": "Jamoa preview", "note": "Individual teacher profiles keyingi Team bosqichida mavjud ma’lumotlar asosida ulanadi."},
+  "results": {"description": "Verifikatsiyalangan natijalar bo‘lmasa, raqam yoki yutuq uydirilmaydi.", "note": "Natijalar uchun alohida JSON manbasi hali repositoryda mavjud emas. Keyingi bosqichda faqat tasdiqlangan ma’lumotlar ulanadi.", "status_label": "Status", "status": "Ma’lumot kutilmoqda"},
+  "admission": {"title": "Kelajakni", "accent": "boshlang.", "description": "Qabul bo‘yicha ma’lumotlar to‘liq mavjud bo‘lgach, bu CTA real admission oqimiga ulanadi.", "phone": "", "side_title": "Qabul", "side_text": "Hozircha uydirma aloqa yoki qabul ma’lumotlari qo‘shilmadi."},
+  "footer": {"text": "Xususiy maktab · Homepage implementation"}
+}
