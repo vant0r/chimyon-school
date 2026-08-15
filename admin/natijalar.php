@@ -1,96 +1,23 @@
 <?php
 declare(strict_types=1);
-
-$root = dirname(__DIR__);
-$file = $root . '/data/natijalar.json';
-$notice = '';
-$error = '';
-$default = ['title' => 'Natijalar', 'intro' => '', 'hero_image' => '', 'results' => []];
-
-function readResults(string $file, array $default): array {
-    if (!is_file($file)) return $default;
-    $raw = file_get_contents($file);
-    $data = is_string($raw) ? json_decode($raw, true) : null;
-    if (!is_array($data)) return $default;
-    foreach ($default as $key => $value) {
-        if (!array_key_exists($key, $data)) $data[$key] = $value;
-        if (is_array($value) && !is_array($data[$key])) $data[$key] = $value;
-    }
-    return $data;
-}
-
-function resultLinesToArray(string $value): array {
-    $items = [];
-    foreach (preg_split('/\R/', $value) ?: [] as $line) {
-        $line = trim($line);
-        if ($line === '') continue;
-        $decoded = json_decode($line, true);
-        if (!is_array($decoded)) throw new RuntimeException('Har bir natija qatori JSON object bo‘lishi kerak.');
-        $items[] = $decoded;
-    }
-    return $items;
-}
-
-function resultsToLines(mixed $value): string {
-    if (!is_array($value)) return '';
-    $lines = [];
-    foreach ($value as $item) {
-        if (!is_array($item)) continue;
-        $encoded = json_encode($item, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-        if ($encoded !== false) $lines[] = $encoded;
-    }
-    return implode("\n", $lines);
-}
-
-$data = readResults($file, $default);
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $title = trim((string)($_POST['title'] ?? ''));
-    $intro = trim((string)($_POST['intro'] ?? ''));
-    $heroImage = trim((string)($_POST['hero_image'] ?? ''));
-    $resultsRaw = trim((string)($_POST['results'] ?? ''));
-
-    try {
-        if ($title === '') throw new RuntimeException('Sarlavha bo‘sh bo‘lishi mumkin emas.');
-        if ($heroImage !== '' && !preg_match('#^(?:https?://|/|\.\./|media/)#i', $heroImage)) {
-            throw new RuntimeException('Hero image path xavfsiz formatda emas.');
-        }
-        $results = $resultsRaw === '' ? [] : resultLinesToArray($resultsRaw);
-        $data = ['title' => $title, 'intro' => $intro, 'hero_image' => $heroImage, 'results' => $results];
-        $json = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-        if ($json === false || file_put_contents($file, $json . PHP_EOL, LOCK_EX) === false) {
-            throw new RuntimeException('JSON faylini saqlash amalga oshmadi.');
-        }
-        $notice = 'Natijalar kontenti saqlandi.';
-    } catch (RuntimeException $e) {
-        $error = $e->getMessage();
-    }
-}
+$root=dirname(__DIR__);$file=$root.'/data/natijalar.json';$notice='';$error='';
+$default=['title'=>'Natijalar','intro'=>'','hero_image'=>'','results'=>[]];
+function readResults(string $file,array $default):array{$raw=is_file($file)?file_get_contents($file):false;$data=is_string($raw)?json_decode($raw,true):null;if(!is_array($data))$data=$default;foreach($default as $k=>$v){if(!array_key_exists($k,$data))$data[$k]=$v;if(is_array($v)&&!is_array($data[$k]))$data[$k]=$v;}return $data;}
+function linesToResults(string $raw):array{$out=[];foreach(preg_split('/\R/',$raw)?:[] as $line){$line=trim($line);if($line==='')continue;$item=json_decode($line,true);if(!is_array($item))throw new RuntimeException('Har bir natija alohida JSON object bo‘lishi kerak.');$out[]=$item;}return $out;}
+function resultsToLines(mixed $items):string{$out=[];foreach(is_array($items)?$items:[] as $item){if(!is_array($item))continue;$j=json_encode($item,JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES);if($j!==false)$out[]=$j;}return implode("\n",$out);}
+function e(mixed $v):string{return htmlspecialchars((string)$v,ENT_QUOTES,'UTF-8');}
+$data=readResults($file,$default);
+if($_SERVER['REQUEST_METHOD']==='POST'){try{$title=trim((string)($_POST['title']??''));$intro=trim((string)($_POST['intro']??''));$image=trim((string)($_POST['hero_image']??''));if($title==='')throw new RuntimeException('Sarlavha bo‘sh bo‘lishi mumkin emas.');if($image!==''&&!preg_match('#^(?:https?://|/|\.\./|media/)#i',$image))throw new RuntimeException('Hero image path xavfsiz formatda emas.');$data=['title'=>$title,'intro'=>$intro,'hero_image'=>$image,'results'=>linesToResults((string)($_POST['results']??''))];$json=json_encode($data,JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES);if($json===false||file_put_contents($file,$json.PHP_EOL,LOCK_EX)===false)throw new RuntimeException('JSON faylini saqlash amalga oshmadi.');$notice='Natijalar kontenti saqlandi.';}catch(RuntimeException $ex){$error=$ex->getMessage();}}
 ?>
-<!doctype html>
-<html lang="uz">
-<head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow">
-<title>Natijalar — CHIMYON SCHOOL Admin</title>
-<style>
-:root{--bg:#f5f5f3;--surface:#fff;--text:#111827;--muted:#68707d;--navy:#14213d;--gold:#c6a15b;--line:rgba(17,24,39,.09);--shadow:0 25px 80px rgba(20,33,61,.08)}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}.shell{width:min(1180px,calc(100% - 40px));margin:auto}.top{height:82px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}.brand{font-size:12px;font-weight:800;letter-spacing:.15em}.back{color:var(--text);text-decoration:none;font-size:13px;font-weight:700}.back:hover{color:var(--gold)}main{padding:70px 0 100px}.eyebrow{margin:0 0 16px;color:var(--gold);font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase}.intro{display:flex;justify-content:space-between;gap:50px;align-items:end;margin-bottom:55px}.intro h1{margin:0;font-size:clamp(48px,8vw,92px);line-height:.9;letter-spacing:-.065em}.intro p{max-width:390px;margin:0;color:var(--muted);line-height:1.7;font-size:14px}.notice,.error{padding:14px 18px;margin-bottom:22px;border:1px solid var(--line);background:#fff;font-size:13px}.error{border-color:rgba(160,60,50,.18);color:#8b3f36}.form{background:var(--surface);box-shadow:var(--shadow);padding:42px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:34px 44px}.wide{grid-column:1/-1}.field label{display:block;margin-bottom:10px;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}.field small{display:block;color:var(--muted);margin-top:7px;font-size:11px;line-height:1.55}.field input,.field textarea{width:100%;border:0;border-bottom:1px solid rgba(17,24,39,.16);background:transparent;border-radius:0;padding:13px 0;font:inherit;font-size:15px;color:var(--text);outline:none}.field textarea{min-height:160px;resize:vertical;border:1px solid var(--line);padding:14px}.field input:focus,.field textarea:focus{border-color:var(--navy)}.guide{grid-column:1/-1;padding:20px 0 0;border-top:1px solid var(--line)}.guide strong{display:block;margin-bottom:8px;font-size:13px}.guide p{margin:0;color:var(--muted);font-size:11px;line-height:1.7}.actions{display:flex;align-items:center;justify-content:space-between;margin-top:38px;padding-top:25px;border-top:1px solid var(--line);gap:20px}.hint{color:var(--muted);font-size:11px;line-height:1.55;max-width:700px}.save{border:0;background:var(--navy);color:#fff;padding:15px 24px;font:inherit;font-size:12px;font-weight:800;cursor:pointer;letter-spacing:.04em}.save:hover{background:#1b2d4e}.footer{margin-top:25px;color:var(--muted);font-size:11px}@media(max-width:760px){.shell{width:min(100% - 26px,600px)}main{padding:48px 0 70px}.intro{display:block}.intro p{margin-top:25px}.form{padding:25px}.grid{grid-template-columns:1fr}.wide,.guide{grid-column:auto}.actions{align-items:flex-start;flex-direction:column}.save{width:100%}}@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
-</style>
-</head>
-<body><div class="shell">
-<header class="top"><div class="brand">CHIMYON / ADMIN</div><a class="back" href="index.php">← Control center</a></header>
-<main>
-<section class="intro"><div><p class="eyebrow">05 / PROOF</p><h1>Natijalar.</h1></div><p>Natijalar sahifasida faqat tasdiqlangan yutuq va ko‘rsatkichlarni boshqaring. Uydirma statistikalar bu tizimga kiritilmaydi.</p></section>
-<?php if ($notice): ?><div class="notice" role="status"><?= htmlspecialchars($notice, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
-<?php if ($error): ?><div class="error" role="alert"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
-<form class="form" method="post" autocomplete="off">
-<div class="grid">
-<div class="field"><label for="title">Sarlavha</label><input id="title" name="title" value="<?= htmlspecialchars((string)$data['title'], ENT_QUOTES, 'UTF-8') ?>" required></div>
-<div class="field"><label for="hero_image">Hero image path</label><input id="hero_image" name="hero_image" value="<?= htmlspecialchars((string)$data['hero_image'], ENT_QUOTES, 'UTF-8') ?>" placeholder="media/images/..."><small>Faqat mavjud media path yoki ishonchli URL ishlating.</small></div>
-<div class="field wide"><label for="intro">Intro</label><textarea id="intro" name="intro" rows="5"><?= htmlspecialchars((string)$data['intro'], ENT_QUOTES, 'UTF-8') ?></textarea></div>
-<div class="guide"><strong>Result records format</strong><p>Har bir qator bitta JSON object. Masalan: <code>{"label":"...","value":"...","description":"..."}</code>. Mavjud record fieldlari o‘zgartirilmasdan saqlanadi; yangi ma’lumot faqat tasdiqlangan bo‘lsa kiriting.</p></div>
-<div class="field wide"><label for="results">Results</label><textarea id="results" name="results" rows="18" spellcheck="false" placeholder='{"label":"...","value":"...","description":"..."}'><?= htmlspecialchars(resultsToLines($data['results']), ENT_QUOTES, 'UTF-8') ?></textarea><small>Har bir qatorda alohida JSON object. Bo‘sh qoldirilsa results array bo‘sh saqlanadi.</small></div>
-</div>
-<div class="actions"><div class="hint">JSON UTF-8 · pretty-print · file locking · mavjud schema saqlanadi.</div><button class="save" type="submit">SAVE CHANGES →</button></div>
-</form>
-<p class="footer">data/natijalar.json · PHP 8.x · zero dependencies · current records: <?= count(is_array($data['results']) ? $data['results'] : []) ?></p>
-</main></div></body></html>
+<!doctype html><html lang="uz"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Natijalar — CHIMYON SCHOOL Admin</title><style>
+:root{--bg:#f4f4f1;--paper:#fff;--ink:#101722;--muted:#6b7380;--navy:#14213d;--gold:#b99758;--line:rgba(16,23,34,.1);--shadow:0 30px 90px rgba(20,33,61,.08)}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}.shell{width:min(1180px,calc(100% - 40px));margin:auto}.top{height:82px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}.brand{font-size:12px;font-weight:850;letter-spacing:.15em}.back{color:var(--ink);text-decoration:none;font-size:12px;font-weight:750}.back:hover{color:var(--gold)}main{padding:72px 0 100px}.heading{display:flex;justify-content:space-between;align-items:end;gap:50px;margin-bottom:56px}.eyebrow{margin:0 0 15px;color:var(--gold);font-size:10px;font-weight:850;letter-spacing:.2em;text-transform:uppercase}.heading h1{margin:0;font-size:clamp(56px,8vw,96px);line-height:.86;letter-spacing:-.075em}.heading p{max-width:390px;margin:0;color:var(--muted);font-size:13px;line-height:1.75}.notice,.error{padding:14px 18px;margin-bottom:22px;background:#fff;border:1px solid var(--line);font-size:13px}.error{color:#8b3f36;border-color:rgba(139,63,54,.18)}.form{background:var(--paper);box-shadow:var(--shadow);padding:44px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:32px 44px}.wide,.guide{grid-column:1/-1}.field label{display:block;margin-bottom:9px;font-size:10px;font-weight:850;letter-spacing:.13em;text-transform:uppercase}.field input,.field textarea{width:100%;border:0;border-bottom:1px solid rgba(16,23,34,.16);background:transparent;color:var(--ink);outline:none;padding:13px 0;font:inherit;font-size:15px}.field textarea{min-height:160px;resize:vertical;border:1px solid var(--line);padding:14px;line-height:1.65}.field input:focus,.field textarea:focus{border-color:var(--navy)}.field small{display:block;margin-top:8px;color:var(--muted);font-size:10px;line-height:1.55}.guide{padding:20px 0 0;border-top:1px solid var(--line)}.guide strong{display:block;margin-bottom:8px;font-size:13px}.guide p{margin:0;color:var(--muted);font-size:11px;line-height:1.7}.actions{display:flex;align-items:center;justify-content:space-between;gap:24px;padding-top:28px;margin-top:38px;border-top:1px solid var(--line)}.hint{color:var(--muted);font-size:10px;line-height:1.6}.save{border:0;background:var(--navy);color:#fff;padding:15px 24px;cursor:pointer;font:inherit;font-size:11px;font-weight:850;letter-spacing:.06em}.save:hover{background:#1d3154}.footer{margin-top:24px;color:var(--muted);font-size:10px}@media(max-width:720px){.shell{width:min(100% - 26px,600px)}main{padding:48px 0 70px}.heading{display:block}.heading p{margin-top:24px}.form{padding:26px}.grid{grid-template-columns:1fr}.wide,.guide{grid-column:auto}.actions{align-items:stretch;flex-direction:column}.save{width:100%}}@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+</style></head><body><div class="shell"><header class="top"><div class="brand">CHIMYON / ADMIN</div><a class="back" href="index.php">← Control center</a></header><main>
+<section class="heading"><div><p class="eyebrow">05 / PROOF</p><h1>Natijalar.</h1></div><p>Faqat tasdiqlangan natijalarni boshqaring. Bo‘sh dataset bo‘lsa, tizim uni bo‘shligicha saqlaydi — uydirma statistika yo‘q.</p></section>
+<?php if($notice):?><div class="notice" role="status"><?=e($notice)?></div><?php endif;?><?php if($error):?><div class="error" role="alert"><?=e($error)?></div><?php endif;?>
+<form class="form" method="post" autocomplete="off"><div class="grid">
+<div class="field"><label for="title">Sarlavha</label><input id="title" name="title" value="<?=e($data['title'])?>" required></div><div class="field"><label for="hero_image">Hero image path</label><input id="hero_image" name="hero_image" value="<?=e($data['hero_image'])?>" placeholder="media/images/..."><small>Faqat mavjud media path yoki ishonchli URL.</small></div>
+<div class="field wide"><label for="intro">Intro</label><textarea id="intro" name="intro" rows="5"><?=e($data['intro'])?></textarea></div>
+<div class="guide"><strong>Result records</strong><p>Har bir qator alohida JSON object. Mavjud record fieldlari saqlanadi. Faqat real va tasdiqlangan natijalarni kiriting.</p></div>
+<div class="field wide"><label for="results">Results JSONL</label><textarea id="results" name="results" rows="18" spellcheck="false" placeholder='{"label":"...","value":"...","description":"..."}'><?=e(resultsToLines($data['results']))?></textarea><small>Har qatorda bitta JSON object. Bo‘sh qoldirish — <code>[]</code>.</small></div>
+</div><div class="actions"><div class="hint">JSON UTF-8 · pretty-print · LOCK_EX · PHP 8.x · zero dependencies.</div><button class="save" type="submit">SAVE CHANGES →</button></div></form>
+<p class="footer">data/natijalar.json · <?=count(is_array($data['results'])?$data['results']:[])?> result records</p></main></div></body></html>
